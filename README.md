@@ -1,5 +1,7 @@
 # Sathi Vision
 
+[![CI](https://github.com/priyanshkk/sathi-vision/actions/workflows/ci.yml/badge.svg)](https://github.com/priyanshkk/sathi-vision/actions/workflows/ci.yml)
+
 **Live object detection from your browser camera, powered by Python + open-vocabulary AI.**
 
 Point your camera at a pen, dog, cup, phone, book, chair, plant — or type a new label — and Sathi Vision draws boxes around matches in real time. Everything runs on your own machine. No upload, no API key, no paid service.

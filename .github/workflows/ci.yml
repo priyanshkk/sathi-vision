@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install lightweight test dependencies
+        run: |
+          python -m pip install --upgrade pip -q
+          python -m pip install -q fastapi uvicorn pydantic opencv-python-headless numpy pillow
+
+      - name: Check Python syntax
+        run: python -m py_compile app.py detector.py
+
+      - name: Start demo backend
+        run: |
+          VISION_MODE=demo python -m uvicorn app:app --host 127.0.0.1 --port 8000 &
+          echo $! > server.pid
+          curl --fail --silent --show-error --retry 15 --retry-delay 1 --retry-connrefused http://127.0.0.1:8000/health
+
+      - name: Smoke test API
+        run: |
+          python - <<'PY'
+          import base64
+          import io
+          import json
+          import urllib.request
+
+          from PIL import Image
+
+          buffer = io.BytesIO()
+          Image.new("RGB", (640, 360), (20, 30, 40)).save(buffer, "JPEG")
+          frame = "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode()
+          payload = json.dumps({"image": frame, "labels": ["pen", "dog"], "threshold": 0.1}).encode()
+          request = urllib.request.Request(
+              "http://127.0.0.1:8000/detect",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+          )
+          result = json.load(urllib.request.urlopen(request, timeout=20))
+          assert result["count"] == 2, result
+          assert [item["label"] for item in result["detections"]] == ["pen", "dog"], result
+          assert result["mode"] == "demo", result
+          print("Demo detection OK:", result["count"], "objects")
+          PY
+
+      - name: Stop demo backend
+        if: always()
+        run: |
+          if [ -f server.pid ]; then kill "$(cat server.pid)" 2>/dev/null || true; fi
