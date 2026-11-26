@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070a0f" />
+    <meta name="description" content="Sathi Vision — live open-vocabulary object detection in your browser with a Python backend. Detect a pen, dog, phone, cup and almost anything you can name." />
+    <title>Sathi Vision — Live Object Detector</title>
+    <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true">
+      <span class="glow glow-a"></span>
+      <span class="glow glow-b"></span>
+      <span class="mesh"></span>
+    </div>
+
+    <header class="site-header">
+      <a class="brand" href="#home">
+        <img src="/static/icon.svg" alt="Sathi Vision logo" width="34" height="34" />
+        <span>SATHI <b>VISION</b></span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#detector">Live detector</a>
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#api">API</a>
+      </nav>
+      <a class="header-cta" href="#detector">Try camera →</a>
+    </header>
+
+    <main id="home">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="kicker"><span class="kicker-dot"></span> OPEN-VOCABULARY · PYTHON + BROWSER</p>
+          <h1>Jo bolo, woh <b>detect</b> karo.</h1>
+          <p class="hero-sub">
+            Camera permission do, object ka naam likho — <em>pen</em>, <em>dog</em>, <em>cup</em>, <em>laptop</em> —
+            aur live bounding boxes dekho. Koi training nahi, koi fixed class list nahi.
+          </p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#detector">Start live detection</a>
+            <a class="btn ghost" href="#api">See API</a>
+          </div>
+          <div class="hero-stats">
+            <div><strong id="heroLabels">35+</strong><span>default labels</span></div>
+            <div><strong>Any name</strong><span>open vocabulary</span></div>
+            <div><strong>100%</strong><span>local inference</span></div>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="scanner-card">
+            <div class="scanner-top"><span></span><span></span><span></span></div>
+            <div class="scanner-body">
+              <div class="fake-frame">
+                <span class="fake-box box-pen"><i>pen · 0.91</i></span>
+                <span class="fake-box box-dog"><i>dog · 0.74</i></span>
+                <span class="fake-pen"></span>
+                <span class="fake-dog">🐕</span>
+              </div>
+            </div>
+            <div class="scanner-foot"><span class="live-dot"></span> detection pipeline active</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="detector-section" id="detector">
+        <div class="section-head">
+          <div>
+            <p class="kicker">LIVE PLAYGROUND</p>
+            <h2>Camera on, objects tracked.</h2>
+          </div>
+          <div class="status-pill" id="statusPill">
+            <span class="live-dot"></span>
+            <span id="statusText">Backend connecting…</span>
+          </div>
+        </div>
+
+        <div class="detector-grid">
+          <div class="camera-card card">
+            <div class="camera-stage" id="cameraStage">
+              <video id="video" playsinline muted autoplay></video>
+              <canvas id="overlay"></canvas>
+              <div class="camera-placeholder" id="placeholder">
+                <div class="placeholder-icon">📷</div>
+                <h3>Camera band karne ke liye ready</h3>
+                <p>Browser aap se camera permission mangega. Frame sirf isi machine ke Python backend me jate hain.</p>
+                <button class="btn primary" id="startCamera">Enable camera</button>
+              </div>
+              <div class="error-box" id="errorBox" hidden></div>
+            </div>
+            <div class="camera-bar">
+              <span><b id="objectCount">0</b> objects</span>
+              <span><b id="fpsValue">0</b> fps</span>
+              <span><b id="latencyValue">0</b> ms infer</span>
+              <span class="mode-chip" id="modeValue">mode: …</span>
+              <button class="mini-btn" id="stopCamera" disabled>Stop</button>
+              <button class="mini-btn" id="snapshotBtn" disabled>Snapshot</button>
+            </div>
+          </div>
+
+          <aside class="control-card card">
+            <div class="control-head">
+              <h3>Detection labels</h3>
+              <span class="hint">Enter = add</span>
+            </div>
+            <p class="small-note">Jo cheez dhundhni hai, uska naam add karo. OWL-ViT text prompt se naya class seekh leta hai.</p>
+            <div class="label-chips" id="labelChips"></div>
+            <form class="label-form" id="labelForm">
+              <input id="labelInput" type="text" maxlength="40" placeholder="e.g. spoon" autocomplete="off" />
+              <button type="submit" aria-label="Add label">+</button>
+            </form>
+
+            <div class="slider-row">
+              <label for="threshold">Confidence threshold</label>
+              <output id="thresholdValue">0.15</output>
+            </div>
+            <input type="range" id="threshold" min="0.05" max="0.6" step="0.05" value="0.15" />
+            <p class="small-note">Kam threshold = zyada detections, thoda noise. Zyada threshold = sirf confident results.</p>
+
+            <div class="privacy-note">
+              <span>🔒</span>
+              <p><b>Privacy first.</b> Video kahin upload nahi hota. Sab frames localhost par process hote hain.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="features" id="features">
+        <div class="section-head">
+          <div>
+            <p class="kicker">WHY THIS IS DIFFERENT</p>
+            <h2>Fixed classes nahi. Aapki vocabulary.</h2>
+          </div>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="feature-icon">✍️</span>
+            <h3>Type any object</h3>
+            <p>"pen" likho to pen, "dog" likho to dog. Model ko text prompt se naya object class mil jata hai.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <h3>Live bounding boxes</h3>
+            <p>Browser camera se ~8 frames/sec, Python backend se boxes, confidence aur labels — sab overlay par.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">🐍</span>
+            <h3>Python under the hood</h3>
+            <p>FastAPI + OpenCV + Hugging Face OWL-ViT. Simple REST API, no framework bloat.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon">🛡️</span>
+            <h3>Graceful fallback</h3>
+            <p>Heavy model na ho to OpenCV cascase mode se face/eye/smile detection chal jata hai, status me mode dikhta hai.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="how" id="how">
+        <div class="section-head">
+          <div>
+            <p class="kicker">PIPELINE</p>
+            <h2>Camera se box tak, 4 steps.</h2>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step"><span>01</span><h3>Permission</h3><p>Browser <code>getUserMedia</code> se camera access mangta hai.</p></div>
+          <div class="step"><span>02</span><h3>Frame capture</h3><p>Video ko chhote JPEG frame me badal kar backend par bheja jata hai.</p></div>
+          <div class="step"><span>03</span><h3>Detect</h3><p>OWL-ViT aapki label list se match karta hai aur boxes return karta hai.</p></div>
+          <div class="step"><span>04</span><h3>Overlay</h3><p>Boxes, labels aur confidence live canvas par draw hote hain.</p></div>
+        </div>
+      </section>
+
+      <section class="api-section" id="api">
+        <div class="api-copy">
+          <p class="kicker">DEVELOPER API</p>
+          <h2>Apne app me bhi laga lo.</h2>
+          <p>Same server <code>POST /detect</code> expose karta hai. Base64 JPEG bhejo, detections lo. <a href="/docs" target="_blank" rel="noreferrer">Interactive docs →</a></p>
+          <ul class="endpoint-list">
+            <li><b>GET</b> /health <span>detector status</span></li>
+            <li><b>GET</b> /labels <span>default label list</span></li>
+            <li><b>POST</b> /detect <span>run detection</span></li>
+          </ul>
+        </div>
+        <pre class="code-card"><code>curl -X POST http://localhost:8000/detect \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image": "data:image/jpeg;base64,/9j/4AAQ...",
+    "labels": ["pen", "dog", "cup"],
+    "threshold": 0.15
+  }'</code></pre>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-brand"><img src="/static/icon.svg" alt="" width="26" height="26" /> SATHI VISION</div>
+      <p>Built with Python, FastAPI, OpenCV & Transformers. Camera data never leaves your machine.</p>
+      <a href="https://github.com/priyanshkk/sathi-vision" target="_blank" rel="noreferrer">GitHub →</a>
+    </footer>
+
+    <script src="/static/app.js" type="module"></script>
+  </body>
+</html>
